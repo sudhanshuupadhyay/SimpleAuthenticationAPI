@@ -1,0 +1,18 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+
+namespace UserAuthApi.Models
+{
+    public class UserRatingModel
+    {
+        public int ResponseID { get; set; }
+        public int UserMobile { get; set; }
+        public string RespondentName { get; set; }
+        public int RespondentMobile { get; set; }
+        public string RespondentEmail { get; set; }
+        public string ReviewComment { get; set; }
+        public int Rating { get; set; }
+    }
+}
