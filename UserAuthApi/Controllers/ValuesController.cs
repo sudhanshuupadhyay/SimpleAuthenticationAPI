@@ -23,6 +23,8 @@ namespace USerAuthAPI.Controllers
         //}
 
         //GET api/values/5
+        [HttpGet]
+        [Route("GetQRCode")]
         public string GetQRCode(int mobileNumber)
         {
             string QrCode = valueDAO.GetQRCode(mobileNumber);
@@ -30,37 +32,113 @@ namespace USerAuthAPI.Controllers
         }
 
         // POST api/values
+        [HttpPost]
+        [Route("RegisterUser")]
         public IHttpActionResult Post([FromBody] UserInfoModel userInfo)
         {
             string errormsg = "";
-            UserInfoModel userInfoModel = new UserInfoModel();
-            MessageCumInfo mixedModel = new MessageCumInfo();
-            ResponseMsg resp = new ResponseMsg();
+            ResponseAndData mixedModel = new ResponseAndData();
+            mixedModel.ResponseMsg = new ResponseMsg();
+            mixedModel.UserInfo = new UserInfoModel();
             try
             {
-               
-                userInfoModel = valueDAO.RegisterUser(userInfo, ref errormsg);
 
-                if (userInfoModel == null)
+                mixedModel.UserInfo = valueDAO.RegisterUser(userInfo, ref errormsg);
+
+                if (mixedModel.UserInfo == null)
                 {
-                    resp.Message = errormsg;
-                    resp.Status = "False";
-                    return Json(resp);
+                    mixedModel.ResponseMsg.Message = errormsg;
+                    mixedModel.ResponseMsg.Status = "False";
+                    return Json(mixedModel);
                 }
-                resp.Message = "User has been registered successfully";
-                resp.Status = "True";
-                mixedModel.ResponseMsgs.Add(resp);
-                mixedModel.UserInfo.Add(userInfoModel);
+                mixedModel.ResponseMsg.Message = "User has been registered successfully";
+                mixedModel.ResponseMsg.Status = "True";
+                
                 return Json(mixedModel);
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Message + "--> " + ex.StackTrace);
-                resp.Message = ex.Message;
-                resp.Status = "False";
-                return Json(resp);
+                mixedModel.ResponseMsg.Message = ex.Message;
+                mixedModel.ResponseMsg.Status = "False";
+                return Json(mixedModel.ResponseMsg);
             }
         }
+        [HttpPost]
+        [Route("UpdateUserRating")]
+        public IHttpActionResult UpdateUserRating([FromBody] UserRatingModel userRating)
+        {
+            
+            ResponseMsg response = new ResponseMsg();
+
+            ResponseAndData mixedModel = new ResponseAndData();
+            mixedModel.ResponseMsg = new ResponseMsg();
+            mixedModel.RatingInfoList = new List<UserRatingModel>();
+            int success = 0;
+            try
+            {
+
+                success = valueDAO.UpdateRating(userRating);
+
+                if (success == 0)
+                {
+                    mixedModel.ResponseMsg.Message = "Invalid feedback";
+                    mixedModel.ResponseMsg.Status = "False";
+                    return Json(response);
+                }
+                mixedModel.ResponseMsg.Message = "Feedback has been registered successfully";
+                mixedModel.ResponseMsg.Status = "True";
+                mixedModel.RatingInfoList.Add(userRating);
+
+
+                return Json(mixedModel);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                mixedModel.ResponseMsg.Message = ex.Message;
+                mixedModel.ResponseMsg.Status = "False";
+                return Json(mixedModel.ResponseMsg);
+            }
+        }
+
+        [HttpGet]
+        [Route("GetFeedBackInfo")]
+        public IHttpActionResult GetFeedBackInfo(int mobileNumber)
+        {
+            
+            ResponseAndData mixedModel = new ResponseAndData();
+            mixedModel.ResponseMsg = new ResponseMsg();
+            mixedModel.RatingInfoList = new List<UserRatingModel>();
+
+            try
+            {
+
+                mixedModel.RatingInfoList = valueDAO.GetFeedBackInfo(mobileNumber);
+                if (mixedModel.RatingInfoList == null)
+                {
+                    mixedModel.ResponseMsg.Message = "No feedback to show.";
+                    mixedModel.ResponseMsg.Status = "False";
+                    return Json(mixedModel.ResponseMsg);
+                }
+                else
+                {
+                    mixedModel.ResponseMsg.Message = "Success";
+                    mixedModel.ResponseMsg.Status = "true";
+
+                }
+
+                return Json(mixedModel);
+            }
+             catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                mixedModel.ResponseMsg.Message = ex.Message;
+                mixedModel.ResponseMsg.Status = "False";
+                return Json(mixedModel.ResponseMsg);
+            }
+        }
+
 
         // PUT api/values/5
         public void Put(int id, [FromBody] string value)

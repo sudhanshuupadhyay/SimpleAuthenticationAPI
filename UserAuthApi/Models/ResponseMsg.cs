@@ -11,9 +11,5 @@ namespace UserAuthApi.Models
         public string Status { get; set; }
     }
 
-    public class MessageCumInfo
-    { 
-       public List<ResponseMsg> ResponseMsgs { get; set; }
-       public List<UserInfoModel> UserInfo { get; set; }
-    }
+   
 }
