@@ -20,7 +20,7 @@ namespace USerAuthAPI.DAL
         string conString = ConfigurationManager.ConnectionStrings["dbconnection"].ConnectionString;
         public UserInfoModel RegisterUser(UserInfoModel userInfo, ref string errormsg)
         {
-            userInfo.QRCode = CreateQRCode();
+            userInfo.QRCode = CreateQRCode(userInfo.Mobile);
             try
             {
                 //insert query for user 
@@ -92,13 +92,14 @@ namespace USerAuthAPI.DAL
 
 
         }
-        public string CreateQRCode()
+        public string CreateQRCode(string mobile)
         {
             string QrUri = "";
             try
             {
                 QRCodeModel qRCode = new QRCodeModel();
                 qRCode.URL = ConfigurationManager.AppSettings["QRURL"].ToString();
+                qRCode.URL = qRCode.URL + mobile;
                 byte[] BitmapArray;
                 QRCodeGenerator QrGenerator = new QRCodeGenerator();
                 QRCodeData QrCodeInfo = QrGenerator.CreateQrCode(qRCode.URL, QRCodeGenerator.ECCLevel.Q);
@@ -114,7 +115,7 @@ namespace USerAuthAPI.DAL
             }
             return QrUri;
         }
-        public string GetQRCode(int mobile)
+        public string GetQRCode(string mobile)
         {
             string QrCode = "";
 
@@ -144,7 +145,7 @@ namespace USerAuthAPI.DAL
 
 
         }
-        public List<UserRatingModel> GetFeedBackInfo(int mobile)
+        public List<UserRatingModel> GetFeedBackInfo(string mobile)
         {
             UserRatingModel ratingModel = new UserRatingModel();
             List<UserRatingModel> ratingList = new List<UserRatingModel>();
@@ -196,10 +197,10 @@ namespace USerAuthAPI.DAL
                 {
                     UserRatingModel ratingModel = new UserRatingModel();
                     ratingModel.ResponseID = Convert.ToInt32(dr["ResponseID"].ToString());
-                    ratingModel.UserMobile = Convert.ToInt32(dr["UserMobile"].ToString());
+                    ratingModel.UserMobile = dr["UserMobile"].ToString();
                     ratingModel.Rating = Convert.ToInt32(dr["Rating"].ToString());
                     ratingModel.ReviewComment = dr["ReviewComment"].ToString();
-                    ratingModel.RespondentMobile = Convert.ToInt32(dr["RespondentMobile"].ToString());
+                    ratingModel.RespondentMobile = dr["RespondentMobile"].ToString();
                     ratingModel.RespondentName = dr["RespondentName"].ToString();
                     ratingModel.RespondentEmail = dr["RespondentEmail"].ToString();
 

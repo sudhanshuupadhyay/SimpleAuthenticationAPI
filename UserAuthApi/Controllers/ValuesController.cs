@@ -25,7 +25,7 @@ namespace USerAuthAPI.Controllers
         //GET api/values/5
         [HttpGet]
         [Route("GetQRCode")]
-        public string GetQRCode(int mobileNumber)
+        public string GetQRCode(string mobileNumber)
         {
             string QrCode = valueDAO.GetQRCode(mobileNumber);
             return QrCode;
@@ -104,7 +104,7 @@ namespace USerAuthAPI.Controllers
 
         [HttpGet]
         [Route("GetFeedBackInfo")]
-        public IHttpActionResult GetFeedBackInfo(int mobileNumber)
+        public IHttpActionResult GetFeedBackInfo(string mobileNumber)
         {
             
             ResponseAndData mixedModel = new ResponseAndData();
