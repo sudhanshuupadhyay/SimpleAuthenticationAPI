@@ -182,6 +182,7 @@
     <Compile Include="Models\QRCodeModel.cs" />
     <Compile Include="Models\ResponseAndData.cs" />
     <Compile Include="Models\ResponseMsg.cs" />
+    <Compile Include="Models\SessionModel.cs" />
     <Compile Include="Models\UserInfoModel.cs" />
     <Compile Include="Models\UserRatingModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -252,6 +253,8 @@
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\Shared\Error.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
+    <Content Include="Views\Home\UserRatingView.cshtml" />
+    <Content Include="Views\Home\ThankYouPage.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

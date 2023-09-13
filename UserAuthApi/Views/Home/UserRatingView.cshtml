@@ -1,0 +1,54 @@
+﻿@model UserAuthApi.Models.UserRatingModel
+@using System.Web.Mvc.Html;
+
+@{
+    ViewBag.Title = "RatingView";
+}
+
+<h2>Customer Feedback</h2>
+
+<fieldset>
+  
+
+    @using (Html.BeginForm("UpdateUserRating", "Home", FormMethod.Post))
+    {
+        <div class="formRowContainer">
+            <div class="labelContainer">Name</div>
+            <div class="valueContainer">
+                @Html.TextBoxFor(model => model.RespondentName)
+                @Html.ValidationMessage("Name")
+            </div>
+        </div>
+        <div class="clearStyle"></div>
+        <div class="formRowContainer">
+            <div class="labelContainer">Rating</div>
+            <div class="valueContainer">@Html.TextBoxFor(model => model.Rating)</div>
+        </div>
+        <div class="clearStyle"></div>
+        <div class="formRowContainer">
+            <div class="labelContainer">Comments</div>
+            <div class="valueContainer">@Html.TextBoxFor(model => model.ReviewComment)</div>
+        </div>
+        <div class="clearStyle"></div>
+        <div class="formRowContainer">
+            <div class="labelContainer">PhoneNumber</div>
+            <div class="valueContainer">
+                @Html.TextBoxFor(model => model.RespondentMobile)
+
+            </div>
+        </div>
+        <div class="clearStyle"></div>
+        <div class="formRowContainer">
+            <div class="labelContainer">Email</div>
+            <div class="valueContainer">
+                @Html.TextBoxFor(model => model.RespondentEmail)
+
+            </div>
+        </div>
+        @Html.HiddenFor(model => model.UserMobile, new { Value = ViewBag.Mobile })
+        <div class="clearStyle"></div>
+        <div class="buttonContainer">
+            <button>Add Product</button>
+        </div>
+    }
+</fieldset>  

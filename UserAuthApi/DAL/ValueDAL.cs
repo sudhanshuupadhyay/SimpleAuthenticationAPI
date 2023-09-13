@@ -12,6 +12,9 @@ using System.Data;
 using System.Configuration;
 using UserAuthApi.Models;
 using UserAuthApi.Utility;
+using log4net.Repository.Hierarchy;
+using System.Reflection;
+using System.Web.Configuration;
 
 namespace USerAuthAPI.DAL
 {
@@ -73,7 +76,7 @@ namespace USerAuthAPI.DAL
                         cmd.Parameters.Add("@RespondentMobile", SqlDbType.VarChar).Value = userRating.RespondentMobile;
                         cmd.Parameters.Add("@RespondentName", SqlDbType.VarChar).Value = userRating.RespondentName;
                         cmd.Parameters.Add("@ReviewComment", SqlDbType.VarChar).Value = userRating.ReviewComment;
-                        cmd.Parameters.Add("@AdditionalAttribute", SqlDbType.VarChar).Value = userRating.AdditionalAttribute;
+                        cmd.Parameters.Add("@AdditionalAttribute", SqlDbType.VarChar).Value = userRating.AdditionalAttribute == null ? "": userRating.AdditionalAttribute;
 
                         con.Open();
                         cmd.ExecuteNonQuery();
@@ -215,6 +218,116 @@ namespace USerAuthAPI.DAL
                 return null;
             }
             return ratingList;
+        }
+        public SessionModel CreateSessionID()
+        {
+            SessionModel sessionModel = new SessionModel();
+            try
+            {
+                //insert query for userRating 
+                string insertRating = "";
+                sessionModel.SessionID = Guid.NewGuid().ToString();
+                sessionModel.CreatedDate = DateTime.Now;
+                sessionModel.UpdatedDate = DateTime.Now;
+
+                using (SqlConnection con = new SqlConnection(conString))
+                {
+                    using (SqlCommand cmd = new SqlCommand(insertRating, con))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        SqlParameter param = new SqlParameter("@sessionID", sessionModel.SessionID);
+                        cmd.Parameters.Add(param);
+                        param = new SqlParameter("@createdDate", sessionModel.CreatedDate);
+                        cmd.Parameters.Add(param);
+                        param = new SqlParameter("@updatedDate", sessionModel.UpdatedDate);
+                        cmd.Parameters.Add(param);
+                        con.Open();
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                return sessionModel;
+            }
+
+
+            return sessionModel;
+
+
+        }
+
+        public SessionModel fetchSessionDetails(string sessionID)
+        {
+            SessionModel sessionModel = new SessionModel();
+            try
+            {
+                string sqlQuery = "Select * from SessionDetail Where SessionID=@sessionID";
+
+                DataTable dt = new DataTable();
+
+                using (SqlConnection con = new SqlConnection(conString))
+                {
+                    using (SqlCommand cmd = new SqlCommand(sqlQuery, con))
+                    {
+                        cmd.CommandType = CommandType.Text;
+                        cmd.CommandText = sqlQuery;
+                        SqlParameter param = new SqlParameter("@sessionID", sessionID);
+                        cmd.Parameters.Add(param);
+                        con.Open();
+                        SqlDataReader rdr = cmd.ExecuteReader();
+                        while (rdr.Read())
+                        {
+                            sessionModel.SessionID = rdr["SessionID"].ToString();
+                            sessionModel.CreatedDate = Convert.ToDateTime(rdr["CreatedDate"].ToString());
+                            sessionModel.UpdatedDate = Convert.ToDateTime(rdr["UpdatedDate"].ToString());
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                return sessionModel;
+            }
+
+            return sessionModel;
+
+        }
+        public bool ValidateSession(string sessionID)
+        {
+            bool isValid = false;
+
+
+            try
+            {
+                SessionModel model = new SessionModel();
+                model = fetchSessionDetails(sessionID);
+
+                if (model != null)
+                {
+                    var diffOfDates = model.UpdatedDate - DateTime.Now;
+                    var allowedDiff = Convert.ToInt32(ConfigurationManager.AppSettings["AllowedDiff"].ToString());
+                    if (diffOfDates.Hours > (allowedDiff - 1))
+                    {
+                        isValid = true;
+                    }
+                }
+                else { isValid = false; }
+
+
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                return isValid;
+            }
+
+
+            return isValid;
+
         }
 
     }
