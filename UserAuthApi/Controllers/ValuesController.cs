@@ -30,6 +30,14 @@ namespace USerAuthAPI.Controllers
             string QrCode = valueDAO.GetQRCode(mobileNumber);
             return QrCode;
         }
+        [HttpGet]
+        [Route("GetUserDetail")]
+        public UserInfoModel GetUserDetail(string mobileNumber)
+        {
+            UserInfoModel userDetail = valueDAO.GetUserDetail(mobileNumber);
+            userDetail.Skills = valueDAO.GetSkillDetails(userDetail.UserID);
+            return userDetail;
+        }
 
         // POST api/values
         [HttpPost]
@@ -37,6 +45,7 @@ namespace USerAuthAPI.Controllers
         public IHttpActionResult Post([FromBody] UserInfoModel userInfo)
         {
             string errormsg = "";
+            int SkillInsertionSuccess = 0;
             ResponseAndData mixedModel = new ResponseAndData();
             mixedModel.ResponseMsg = new ResponseMsg();
             mixedModel.UserInfo = new UserInfoModel();
@@ -51,6 +60,12 @@ namespace USerAuthAPI.Controllers
                     mixedModel.ResponseMsg.Status = "False";
                     return Json(mixedModel);
                 }
+                SkillInsertionSuccess = valueDAO.InsertSkillDetailRowWise(userInfo.Skills,userInfo.Mobile);
+                if (SkillInsertionSuccess == 1)
+                {
+                    mixedModel.UserInfo.Skills = userInfo.Skills;
+                }
+
                 mixedModel.ResponseMsg.Message = "User has been registered successfully";
                 mixedModel.ResponseMsg.Status = "True";
                 

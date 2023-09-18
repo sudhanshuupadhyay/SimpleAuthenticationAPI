@@ -38,7 +38,6 @@ namespace USerAuthAPI.DAL
                         cmd.Parameters.Add("@Name", SqlDbType.VarChar).Value = userInfo.Name;
                         cmd.Parameters.Add("@Mobile", SqlDbType.VarChar).Value = userInfo.Mobile;
                         cmd.Parameters.Add("@Address", SqlDbType.VarChar).Value = userInfo.Address;
-                        cmd.Parameters.Add("@Skills", SqlDbType.VarChar).Value = userInfo.Skills;
                         cmd.Parameters.Add("@Email", SqlDbType.VarChar).Value = userInfo.Email;
                         cmd.Parameters.Add("@QRCode", SqlDbType.VarChar).Value = userInfo.QRCode;
 
@@ -100,9 +99,10 @@ namespace USerAuthAPI.DAL
             string QrUri = "";
             try
             {
+                string moblieEncoded = Base64Encode(mobile);
                 QRCodeModel qRCode = new QRCodeModel();
                 qRCode.URL = ConfigurationManager.AppSettings["QRURL"].ToString();
-                qRCode.URL = qRCode.URL + mobile;
+                qRCode.URL = qRCode.URL + moblieEncoded;
                 byte[] BitmapArray;
                 QRCodeGenerator QrGenerator = new QRCodeGenerator();
                 QRCodeData QrCodeInfo = QrGenerator.CreateQrCode(qRCode.URL, QRCodeGenerator.ECCLevel.Q);
@@ -150,7 +150,7 @@ namespace USerAuthAPI.DAL
         }
         public List<UserRatingModel> GetFeedBackInfo(string mobile)
         {
-            UserRatingModel ratingModel = new UserRatingModel();
+           
             List<UserRatingModel> ratingList = new List<UserRatingModel>();
             
             try
@@ -328,6 +328,180 @@ namespace USerAuthAPI.DAL
 
             return isValid;
 
+        }
+        public string Base64Encode(string plainText)
+        {
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            return System.Convert.ToBase64String(plainTextBytes);
+        }
+
+        public string Base64Decode(string base64EncodedData)
+        {
+            var base64EncodedBytes = System.Convert.FromBase64String(base64EncodedData);
+            return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
+        }
+
+        public UserInfoModel GetUserDetail(string mobile)
+        {
+
+            UserInfoModel userInfo = new UserInfoModel();
+            //insert query for userRating 
+            string query = "Select * from UserInfo Where Mobile=@Mobile";
+
+            using (SqlConnection con = new SqlConnection(conString))
+            {
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.CommandText = query;
+                    SqlParameter param = new SqlParameter("@Mobile", mobile);
+                    cmd.Parameters.Add(param);
+
+                    con.Open();
+                    SqlDataReader rdr = cmd.ExecuteReader();
+                    while (rdr.Read())
+                    {
+                        userInfo.Mobile = rdr["Mobile"].ToString();
+                        userInfo.Email = rdr["Email"].ToString();
+                        userInfo.Address = rdr["Address"].ToString();
+                        userInfo.QRCode = rdr["QRCode"].ToString();
+                        userInfo.Name = rdr["Name"].ToString();
+                        userInfo.UserID = Convert.ToInt16(rdr["UserID"].ToString());
+                    }
+                }
+            }
+
+
+            return userInfo;
+
+
+        }
+        public int InsertSkillDetailsIntoDB(SkillDetails skillDetails)
+        {
+            int success = 0;
+            try
+            {
+                //insert query for userRating 
+                string insertRating = ConfigurationManager.AppSettings["InsertSkillStoredproc"].ToString();
+
+                using (SqlConnection con = new SqlConnection(conString))
+                {
+                    using (SqlCommand cmd = new SqlCommand(insertRating, con))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        cmd.Parameters.Add("@UserID", SqlDbType.VarChar).Value = skillDetails.UserID;
+                        cmd.Parameters.Add("@Years", SqlDbType.VarChar).Value = skillDetails.Years;
+                        cmd.Parameters.Add("@Skill", SqlDbType.VarChar).Value = skillDetails.Skill;
+                        
+                        con.Open();
+                        cmd.ExecuteNonQuery();
+                        success = 1;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                return success;
+            }
+
+
+            return success;
+
+
+        }
+
+        public int InsertSkillDetailRowWise(List<SkillDetails> skills,string mobile)
+        {
+            int Success = 0;
+            try
+            {
+                UserInfoModel userdetail = new UserInfoModel();
+                userdetail = GetUserDetail(mobile);
+                foreach (SkillDetails skill in skills)
+                {
+                    skill.UserID = userdetail.UserID;
+                    InsertSkillDetailsIntoDB(skill);
+                    Success = 1;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error Occured in InsertSkillDetailRowWise - > " + ex.Message + ex.StackTrace);
+                    return Success;
+            }
+            return Success;
+        }
+
+        public List<SkillDetails> GetSkillDetails(int userID)
+        {
+
+            List<SkillDetails> skillList = new List<SkillDetails>();
+
+            try
+            {
+                string sqlQuery = "Select * from SkillsDetail Where UserID=@userID";
+                SqlDataAdapter adapter;
+                DataTable dt = new DataTable();
+
+                using (SqlConnection con = new SqlConnection(conString))
+                {
+                    using (SqlCommand cmd = new SqlCommand(sqlQuery, con))
+                    {
+                        cmd.CommandType = CommandType.Text;
+                        cmd.CommandText = sqlQuery;
+                        SqlParameter param = new SqlParameter("@userID", userID);
+                        cmd.Parameters.Add(param);
+                        con.Open();
+                        //Adapter bind to query and connection object
+                        adapter = new SqlDataAdapter(cmd);
+                        //fill the dataset
+                        adapter.Fill(dt);
+                    }
+                }
+                skillList = ConvertDatatableIntoSkillList(dt);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                return null;
+            }
+
+
+            return skillList;
+
+
+        }
+        public List<SkillDetails> ConvertDatatableIntoSkillList(DataTable dt)
+        {
+            List<SkillDetails> skillList = new List<SkillDetails>();
+            try
+            {
+                if (dt == null && dt.Rows.Count == 0) return null;
+
+
+
+                foreach (DataRow dr in dt.Rows)
+                {
+                    SkillDetails skills = new SkillDetails();
+                    skills.Skill = dr["Skill"].ToString();
+                    skills.Years = Convert.ToInt32(dr["Years"].ToString());
+                    skills.UserID = Convert.ToInt32(dr["UserID"].ToString());
+
+
+                    skillList.Add(skills);
+
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                return null;
+            }
+            return skillList;
         }
 
     }

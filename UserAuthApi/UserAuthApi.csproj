@@ -183,6 +183,7 @@
     <Compile Include="Models\ResponseAndData.cs" />
     <Compile Include="Models\ResponseMsg.cs" />
     <Compile Include="Models\SessionModel.cs" />
+    <Compile Include="Models\SkillDetails.cs" />
     <Compile Include="Models\UserInfoModel.cs" />
     <Compile Include="Models\UserRatingModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
