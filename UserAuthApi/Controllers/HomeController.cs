@@ -27,7 +27,8 @@ namespace UserAuthApi.Controllers
         public ActionResult UserRatingView(string mobileNumber)
         {
             ValueDAL value = new ValueDAL();
-            ViewBag.Mobile = mobileNumber;
+            string mobileDecoded = value.Base64Decode(mobileNumber);
+            ViewBag.Mobile = mobileDecoded;
             return View();
         }
 
