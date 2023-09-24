@@ -99,10 +99,11 @@ namespace USerAuthAPI.DAL
             string QrUri = "";
             try
             {
-                string moblieEncoded = Base64Encode(mobile);
+                //Commenting encoding as it was not working ..
+                /*string moblieEncoded = Base64Encode(mobile)*/;
                 QRCodeModel qRCode = new QRCodeModel();
                 qRCode.URL = ConfigurationManager.AppSettings["QRURL"].ToString();
-                qRCode.URL = qRCode.URL + moblieEncoded;
+                qRCode.URL = qRCode.URL + mobile;
                 byte[] BitmapArray;
                 QRCodeGenerator QrGenerator = new QRCodeGenerator();
                 QRCodeData QrCodeInfo = QrGenerator.CreateQrCode(qRCode.URL, QRCodeGenerator.ECCLevel.Q);

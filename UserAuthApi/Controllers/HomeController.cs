@@ -24,11 +24,10 @@ namespace UserAuthApi.Controllers
 
             return View();
         }
-        public ActionResult UserRatingView(string mobile)
+        public ActionResult UserRatingView(string mobileNumber)
         {
             ValueDAL value = new ValueDAL();
-            string mobileDecoded = value.Base64Decode(mobile);
-            ViewBag.Mobile = mobile;
+            ViewBag.Mobile = mobileNumber;
             return View();
         }
 
