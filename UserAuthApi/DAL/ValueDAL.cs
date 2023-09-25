@@ -99,6 +99,7 @@ namespace USerAuthAPI.DAL
             string QrUri = "";
             try
             {
+                //UNCommenting encoding as it was not working ..
                 string moblieEncoded = Base64Encode(mobile);
                 QRCodeModel qRCode = new QRCodeModel();
                 qRCode.URL = ConfigurationManager.AppSettings["QRURL"].ToString();
