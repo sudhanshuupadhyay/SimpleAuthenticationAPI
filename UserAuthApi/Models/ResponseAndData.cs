@@ -10,6 +10,7 @@ namespace UserAuthApi.Models
     {
         public ResponseMsg ResponseMsg { get; set; }
         public UserInfoModel UserInfo { get; set; }
+        public SessionModel SessionInfo { get; set; }
         public List<UserRatingModel> RatingInfoList { get; set; }
     }
 }

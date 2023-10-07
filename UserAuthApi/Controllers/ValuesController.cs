@@ -2,9 +2,13 @@
 using Swashbuckle.Swagger;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Web.Http;
 using System.Web.Http.Results;
 using UserAuthApi.Models;
@@ -25,18 +29,26 @@ namespace USerAuthAPI.Controllers
         //GET api/values/5
         [HttpGet]
         [Route("GetQRCode")]
-        public string GetQRCode(string mobileNumber)
+        public string GetQRCode(string mobileNumber ,string sessionId,string userID)
         {
-            string QrCode = valueDAO.GetQRCode(mobileNumber);
-            return QrCode;
+            if (valueDAO.isSessionIDValid(sessionId))
+            {
+                string QrCode = valueDAO.GetQRCode(mobileNumber);
+                return QrCode;
+            }
+            return "Invalid Session";
         }
         [HttpGet]
         [Route("GetUserDetail")]
-        public UserInfoModel GetUserDetail(string mobileNumber)
+        public IHttpActionResult GetUserDetail(string mobileNumber,string sessionId,string userID)
         {
-            UserInfoModel userDetail = valueDAO.GetUserDetail(mobileNumber);
-            userDetail.Skills = valueDAO.GetSkillDetails(userDetail.UserID);
-            return userDetail;
+            if (valueDAO.isSessionIDValid(sessionId))
+            {
+                UserInfoModel userDetail = valueDAO.GetUserDetail(mobileNumber);
+                userDetail.Skills = valueDAO.GetSkillDetails(userDetail.UserID);
+                return Json(userDetail);
+            }
+            return Json("Invalid Session");
         }
 
         // POST api/values
@@ -49,6 +61,7 @@ namespace USerAuthAPI.Controllers
             ResponseAndData mixedModel = new ResponseAndData();
             mixedModel.ResponseMsg = new ResponseMsg();
             mixedModel.UserInfo = new UserInfoModel();
+            mixedModel.SessionInfo = new SessionModel();
             try
             {
 
@@ -60,6 +73,7 @@ namespace USerAuthAPI.Controllers
                     mixedModel.ResponseMsg.Status = "False";
                     return Json(mixedModel);
                 }
+                mixedModel.SessionInfo = valueDAO.CreateSessionID(Convert.ToString(mixedModel.UserInfo.UserID));
                 SkillInsertionSuccess = valueDAO.InsertSkillDetailRowWise(userInfo.Skills,userInfo.Mobile);
                 if (SkillInsertionSuccess == 1)
                 {
@@ -81,10 +95,14 @@ namespace USerAuthAPI.Controllers
         }
         [HttpPost]
         [Route("UpdateUserRating")]
-        public IHttpActionResult UpdateUserRating([FromBody] UserRatingModel userRating)
+        public IHttpActionResult UpdateUserRating([FromBody] UserRatingModel userRating,string sessionId)
         {
-            
-            ResponseMsg response = new ResponseMsg();
+            if (!valueDAO.isSessionIDValid(sessionId))
+            {
+                return Json("Invalid Session");
+            }
+
+                ResponseMsg response = new ResponseMsg();
 
             ResponseAndData mixedModel = new ResponseAndData();
             mixedModel.ResponseMsg = new ResponseMsg();
@@ -119,9 +137,13 @@ namespace USerAuthAPI.Controllers
 
         [HttpGet]
         [Route("GetFeedBackInfo")]
-        public IHttpActionResult GetFeedBackInfo(string mobileNumber)
+        public IHttpActionResult GetFeedBackInfo(string mobileNumber,string sessionId,string userID)
         {
-            
+            if (!valueDAO.isSessionIDValid(sessionId))
+            {
+                return Json("Invalid Session");
+            }
+
             ResponseAndData mixedModel = new ResponseAndData();
             mixedModel.ResponseMsg = new ResponseMsg();
             mixedModel.RatingInfoList = new List<UserRatingModel>();
@@ -164,6 +186,108 @@ namespace USerAuthAPI.Controllers
         public void Delete(int id)
         {
 
+        }
+        [HttpGet]
+        [Route("EncryptSessionId")]
+        public IHttpActionResult EncryptSessionId(string sessionId)
+        {
+            ResponseMsg response = new ResponseMsg();
+            try
+            {
+                string key = ConfigurationManager.AppSettings["CypherText"];
+                string encryptedtext = Security.EncryptString(key, sessionId);
+                response.Message = encryptedtext;
+                response.Status = "True";
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                response.Message = ex.Message;
+                response.Status = "False";
+            }
+            return Json(response);
+        }
+        [HttpGet]
+        [Route("CreateSession")]
+        public IHttpActionResult CreateSession(string userID)
+        {
+            ResponseMsg response = new ResponseMsg();
+            SessionModel sessionDetail = new SessionModel();
+            try
+            {
+                sessionDetail = valueDAO.CreateSessionID(userID);
+                
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                response.Message = ex.Message;
+                response.Status = "False";
+                return Json(response);
+
+            }
+            return Json(sessionDetail);
+        }
+        [HttpGet]
+        [Route("DecryptSessionId")]
+        public IHttpActionResult DecryptSessionId(string sessionId)
+        {
+            ResponseMsg response = new ResponseMsg();
+            try
+            {
+
+                string key = ConfigurationManager.AppSettings["CypherText"];
+                string decryptedText = Security.DecryptString(key, sessionId);
+                response.Message = decryptedText;
+                response.Status = "True";
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                response.Message = ex.Message;
+                response.Status = "False";
+            }
+            return Json(response);
+        }
+
+        [HttpGet]
+        [Route("UpdateProfile")]
+        public IHttpActionResult UppdateProfile(string SessionID,UserInfoModel userInfo)
+        {
+            ResponseMsg response = new ResponseMsg();
+            try
+            {
+
+                response.Message = "test";
+                response.Status = "True";
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                response.Message = ex.Message;
+                response.Status = "False";
+            }
+            return Json(response);
+        }
+
+        [HttpGet]
+        [Route("SearchUser")]
+        public IHttpActionResult SearchUser(string SessionID,string City,string lattitude,string longitude,string rangeInKM, string userID)
+        {
+            ResponseMsg response = new ResponseMsg();
+            try
+            {
+
+                response.Message = "test";
+                response.Status = "True";
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                response.Message = ex.Message;
+                response.Status = "False";
+            }
+            return Json(response);
         }
     }
 }

@@ -10,5 +10,6 @@ namespace UserAuthApi.Models
         public string SessionID { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
+        public string UserID { get; set; }
     }
 }

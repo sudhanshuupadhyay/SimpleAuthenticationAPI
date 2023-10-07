@@ -15,5 +15,7 @@ namespace UserAuthApi.Models
         public string ReviewComment { get; set; }
         public int Rating { get; set; }
         public string AdditionalAttribute { get; set; }
+        public string ReviewReason { get; set; }
+
     }
 }

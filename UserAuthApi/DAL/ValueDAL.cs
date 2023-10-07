@@ -15,6 +15,9 @@ using UserAuthApi.Utility;
 using log4net.Repository.Hierarchy;
 using System.Reflection;
 using System.Web.Configuration;
+using System.ComponentModel;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace USerAuthAPI.DAL
 {
@@ -37,9 +40,16 @@ namespace USerAuthAPI.DAL
 
                         cmd.Parameters.Add("@Name", SqlDbType.VarChar).Value = userInfo.Name;
                         cmd.Parameters.Add("@Mobile", SqlDbType.VarChar).Value = userInfo.Mobile;
-                        cmd.Parameters.Add("@Address", SqlDbType.VarChar).Value = userInfo.Address;
+                        cmd.Parameters.Add("@Address", SqlDbType.VarChar).Value = userInfo.Address1;
                         cmd.Parameters.Add("@Email", SqlDbType.VarChar).Value = userInfo.Email;
                         cmd.Parameters.Add("@QRCode", SqlDbType.VarChar).Value = userInfo.QRCode;
+                        cmd.Parameters.Add("@Address2", SqlDbType.VarChar).Value = userInfo.Address2;
+                        cmd.Parameters.Add("@City", SqlDbType.VarChar).Value = userInfo.City;
+                        cmd.Parameters.Add("@Country", SqlDbType.VarChar).Value = userInfo.Country;
+                        cmd.Parameters.Add("@Latitude", SqlDbType.VarChar).Value = userInfo.Latitude;
+                        cmd.Parameters.Add("@Longitude", SqlDbType.VarChar).Value = userInfo.Longitude;
+                        cmd.Parameters.Add("@State", SqlDbType.VarChar).Value = userInfo.State;
+                        cmd.Parameters.Add("@IsCurrent", SqlDbType.VarChar).Value = userInfo.IsCurrent;
 
                         con.Open();
                         cmd.ExecuteNonQuery();
@@ -76,6 +86,7 @@ namespace USerAuthAPI.DAL
                         cmd.Parameters.Add("@RespondentName", SqlDbType.VarChar).Value = userRating.RespondentName;
                         cmd.Parameters.Add("@ReviewComment", SqlDbType.VarChar).Value = userRating.ReviewComment;
                         cmd.Parameters.Add("@AdditionalAttribute", SqlDbType.VarChar).Value = userRating.AdditionalAttribute == null ? "": userRating.AdditionalAttribute;
+                        cmd.Parameters.Add("@ReviewReason", SqlDbType.VarChar).Value = userRating.ReviewReason == null ? "": userRating.ReviewReason;
 
                         con.Open();
                         cmd.ExecuteNonQuery();
@@ -220,16 +231,17 @@ namespace USerAuthAPI.DAL
             }
             return ratingList;
         }
-        public SessionModel CreateSessionID()
+        public SessionModel CreateSessionID(string userId)
         {
             SessionModel sessionModel = new SessionModel();
             try
             {
                 //insert query for userRating 
-                string insertRating = "";
+                string insertRating = ConfigurationManager.AppSettings["InsertSessionDetail"].ToString();
                 sessionModel.SessionID = Guid.NewGuid().ToString();
                 sessionModel.CreatedDate = DateTime.Now;
                 sessionModel.UpdatedDate = DateTime.Now;
+                sessionModel.UserID = userId;
 
                 using (SqlConnection con = new SqlConnection(conString))
                 {
@@ -243,6 +255,8 @@ namespace USerAuthAPI.DAL
                         cmd.Parameters.Add(param);
                         param = new SqlParameter("@updatedDate", sessionModel.UpdatedDate);
                         cmd.Parameters.Add(param);
+                        param = new SqlParameter("@userId", sessionModel.UserID);
+                        cmd.Parameters.Add(param);
                         con.Open();
                         cmd.ExecuteNonQuery();
                     }
@@ -251,7 +265,7 @@ namespace USerAuthAPI.DAL
             catch (Exception ex)
             {
                 Log.Error(ex.Message + "--> " + ex.StackTrace);
-                return sessionModel;
+                throw ex;
             }
 
 
@@ -371,11 +385,7 @@ namespace USerAuthAPI.DAL
                     }
                 }
             }
-
-
             return userInfo;
-
-
         }
         public int InsertSkillDetailsIntoDB(SkillDetails skillDetails)
         {
@@ -404,13 +414,10 @@ namespace USerAuthAPI.DAL
             catch (Exception ex)
             {
                 Log.Error(ex.Message + "--> " + ex.StackTrace);
-                return success;
+                throw ex;
             }
 
-
             return success;
-
-
         }
 
         public int InsertSkillDetailRowWise(List<SkillDetails> skills,string mobile)
@@ -431,7 +438,7 @@ namespace USerAuthAPI.DAL
             catch (Exception ex)
             {
                 Log.Error("Error Occured in InsertSkillDetailRowWise - > " + ex.Message + ex.StackTrace);
-                    return Success;
+                throw ex;
             }
             return Success;
         }
@@ -467,7 +474,7 @@ namespace USerAuthAPI.DAL
             catch (Exception ex)
             {
                 Log.Error(ex.Message + "--> " + ex.StackTrace);
-                return null;
+                throw ex;
             }
 
 
@@ -500,12 +507,126 @@ namespace USerAuthAPI.DAL
             catch (Exception ex)
             {
                 Log.Error(ex.Message + "--> " + ex.StackTrace);
-                return null;
+                throw ex;
             }
             return skillList;
         }
+        public bool isSessionIDValid(string SessionID)
+        {
+            bool isValid = false;
+            bool isUpdated = false;
+            string orignalSessionID = "";
+           
+            SessionModel sessionDetail = new SessionModel();
+            int allowedsessionTime = Convert.ToInt32(ConfigurationManager.AppSettings["AllowedDiff"].ToString());
+;            try 
+            {
+                string key = ConfigurationManager.AppSettings["CypherText"];
+                 orignalSessionID = Security.DecryptString(key, SessionID);
+               
+                if (isSessionIdExist(orignalSessionID, ref sessionDetail))
+                {
+                    if ((DateTime.Now - sessionDetail.UpdatedDate).TotalMinutes < (allowedsessionTime - 1))
+                    {
+                        isValid = true;
+                    }
+                    else 
+                    {
+                        isUpdated =  UpdateSession(orignalSessionID);
+                    }
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                throw ex;
+            }
+            return (isValid || isUpdated);
+        }
+
+        public bool isSessionIdExist(string sessionId, ref SessionModel sessionDetail)
+        {
+            bool isExist = false;
+            try {
+
+                //query to check session detail exist ..
+                string query = "Select * from SessionDetail where SessionID = @sessionId";
+
+                using (SqlConnection con = new SqlConnection(conString))
+                {
+                    using (SqlCommand cmd = new SqlCommand(query, con))
+                    {
+                        cmd.CommandType = CommandType.Text;
+                        cmd.CommandText = query;
+                        SqlParameter param = new SqlParameter("@sessionId", sessionId);
+                        cmd.Parameters.Add(param);
+
+                        con.Open();
+                        SqlDataReader rdr = cmd.ExecuteReader();
+                        while (rdr.Read())
+                        {
+                            if (rdr["UserID"] != null)
+                            {
+                                sessionDetail.UserID = rdr["UserID"].ToString();
+                                sessionDetail.CreatedDate = Convert.ToDateTime(rdr["CreatedDate"].ToString());
+                                sessionDetail.UpdatedDate = Convert.ToDateTime(rdr["UpdatedDate"].ToString());
+                                sessionDetail.UserID = rdr["UserID"].ToString();
+
+                                isExist = true;
+                            }
+                           
+                            
+                        }
+                    }
+                }
+
+            }
+            catch(Exception ex) 
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                throw ex;
+            }
+
+            return isExist;
+        }
+        public bool UpdateSession(string sessionId)
+        {
+            bool isExist = false;
+            try
+            {
+
+                //insert query for userRating 
+                string query = ConfigurationManager.AppSettings["UpdateSessionDetail"].ToString();
+
+                using (SqlConnection con = new SqlConnection(conString))
+                {
+                    using (SqlCommand cmd = new SqlCommand(query, con))
+                    {
+                        cmd.CommandType = CommandType.Text;
+                        cmd.CommandText = query;
+                        SqlParameter param = new SqlParameter("@sessionId", sessionId);
+                        cmd.Parameters.Add(param);
+
+                        con.Open();
+                        SqlDataReader rdr = cmd.ExecuteReader();
+                        
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message + "--> " + ex.StackTrace);
+                return isExist;
+            }
+
+            return isExist;
+        }
 
     }
+    
     //Extension method to convert Bitmap to Byte Array
     public static class BitmapExtension
     {
