@@ -251,10 +251,10 @@ namespace USerAuthAPI.DAL
 
                         SqlParameter param = new SqlParameter("@sessionID", sessionModel.SessionID);
                         cmd.Parameters.Add(param);
-                        param = new SqlParameter("@createdDate", sessionModel.CreatedDate);
-                        cmd.Parameters.Add(param);
-                        param = new SqlParameter("@updatedDate", sessionModel.UpdatedDate);
-                        cmd.Parameters.Add(param);
+                        //param = new SqlParameter("@createdDate", sessionModel.CreatedDate);
+                        //cmd.Parameters.Add(param);
+                        //param = new SqlParameter("@updatedDate", sessionModel.UpdatedDate);
+                        //cmd.Parameters.Add(param);
                         param = new SqlParameter("@userId", sessionModel.UserID);
                         cmd.Parameters.Add(param);
                         con.Open();
@@ -511,10 +511,10 @@ namespace USerAuthAPI.DAL
             }
             return skillList;
         }
-        public bool isSessionIDValid(string SessionID)
+        public bool isSessionIDValid(string SessionID,string userId)
         {
             bool isValid = false;
-            bool isUpdated = false;
+            //bool isUpdated = false;
             string orignalSessionID = "";
            
             SessionModel sessionDetail = new SessionModel();
@@ -526,13 +526,21 @@ namespace USerAuthAPI.DAL
                
                 if (isSessionIdExist(orignalSessionID, ref sessionDetail))
                 {
-                    if ((DateTime.Now - sessionDetail.UpdatedDate).TotalMinutes < (allowedsessionTime - 1))
+                    if (sessionDetail.UserID == userId)
                     {
-                        isValid = true;
+                        if ((DateTime.Now - sessionDetail.UpdatedDate).TotalMinutes < (allowedsessionTime - 1))
+                        {
+                            isValid = true;
+                        }
+                        else
+                        {
+                            //isUpdated = UpdateSession(orignalSessionID);
+                            isValid = false;
+                        }
                     }
-                    else 
+                    else
                     {
-                        isUpdated =  UpdateSession(orignalSessionID);
+                        isValid = false;
                     }
                 }
 
@@ -543,7 +551,7 @@ namespace USerAuthAPI.DAL
                 Log.Error(ex.Message + "--> " + ex.StackTrace);
                 throw ex;
             }
-            return (isValid || isUpdated);
+            return (isValid);
         }
 
         public bool isSessionIdExist(string sessionId, ref SessionModel sessionDetail)
@@ -591,13 +599,11 @@ namespace USerAuthAPI.DAL
 
             return isExist;
         }
-        public bool UpdateSession(string sessionId)
+        public bool UpdateSession(string sessionId,string userId)
         {
             bool isExist = false;
             try
             {
-
-                //insert query for userRating 
                 string query = ConfigurationManager.AppSettings["UpdateSessionDetail"].ToString();
 
                 using (SqlConnection con = new SqlConnection(conString))
@@ -607,6 +613,8 @@ namespace USerAuthAPI.DAL
                         cmd.CommandType = CommandType.Text;
                         cmd.CommandText = query;
                         SqlParameter param = new SqlParameter("@sessionId", sessionId);
+                        cmd.Parameters.Add(param);
+                        param = new SqlParameter("@UserID", userId);
                         cmd.Parameters.Add(param);
 
                         con.Open();

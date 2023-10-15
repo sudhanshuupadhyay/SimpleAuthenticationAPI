@@ -31,7 +31,7 @@ namespace USerAuthAPI.Controllers
         [Route("GetQRCode")]
         public string GetQRCode(string mobileNumber ,string sessionId,string userID)
         {
-            if (valueDAO.isSessionIDValid(sessionId))
+            if (valueDAO.isSessionIDValid(sessionId, userID))
             {
                 string QrCode = valueDAO.GetQRCode(mobileNumber);
                 return QrCode;
@@ -42,7 +42,7 @@ namespace USerAuthAPI.Controllers
         [Route("GetUserDetail")]
         public IHttpActionResult GetUserDetail(string mobileNumber,string sessionId,string userID)
         {
-            if (valueDAO.isSessionIDValid(sessionId))
+            if (valueDAO.isSessionIDValid(sessionId, userID))
             {
                 UserInfoModel userDetail = valueDAO.GetUserDetail(mobileNumber);
                 userDetail.Skills = valueDAO.GetSkillDetails(userDetail.UserID);
@@ -95,9 +95,9 @@ namespace USerAuthAPI.Controllers
         }
         [HttpPost]
         [Route("UpdateUserRating")]
-        public IHttpActionResult UpdateUserRating([FromBody] UserRatingModel userRating,string sessionId)
+        public IHttpActionResult UpdateUserRating([FromBody] UserRatingModel userRating,string sessionId,string userId)
         {
-            if (!valueDAO.isSessionIDValid(sessionId))
+            if (!valueDAO.isSessionIDValid(sessionId, userId))
             {
                 return Json("Invalid Session");
             }
@@ -139,7 +139,7 @@ namespace USerAuthAPI.Controllers
         [Route("GetFeedBackInfo")]
         public IHttpActionResult GetFeedBackInfo(string mobileNumber,string sessionId,string userID)
         {
-            if (!valueDAO.isSessionIDValid(sessionId))
+            if (!valueDAO.isSessionIDValid(sessionId, userID))
             {
                 return Json("Invalid Session");
             }
@@ -250,7 +250,7 @@ namespace USerAuthAPI.Controllers
             return Json(response);
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("UpdateProfile")]
         public IHttpActionResult UppdateProfile(string SessionID,UserInfoModel userInfo)
         {
@@ -277,9 +277,12 @@ namespace USerAuthAPI.Controllers
             ResponseMsg response = new ResponseMsg();
             try
             {
+                if (valueDAO.isSessionIDValid(SessionID, userID))
+                {
 
-                response.Message = "test";
-                response.Status = "True";
+                    response.Message = "test";
+                    response.Status = "True";
+                }
             }
             catch (Exception ex)
             {
